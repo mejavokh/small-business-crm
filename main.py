@@ -4,6 +4,16 @@ from models import Client, OrderStatus
 client_storage = ClientStorage()
 order_storage = OrderStorage()
 
+try:
+    client_storage.load_from_file()
+except FileNotFoundError:
+    pass
+
+try:
+    order_storage.load_from_file()
+except FileNotFoundError:
+    pass
+
 def print_clients(clients: list[Client]) -> None:
     if not clients:
         print("Клиент не найден")
