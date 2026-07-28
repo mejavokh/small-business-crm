@@ -1,25 +1,51 @@
-from dataclasses import dataclass
-from enum import Enum
+from database import Base, engine
+from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Float, Integer, DateTime, ForeignKey, func
 
-@dataclass
-class Client:
-    id: int
-    name: str
-    phone: str
+class Service(Base):
+    __tablename__ = "services"
 
-class OrderStatus(Enum):
-    PENDING = "в ожидании"
-    ACCEPTED = "принята"
-    CANCELLED = "отменена"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    price: Mapped[float] = mapped_column(Float)
+    duration: Mapped[int] = mapped_column(Integer)
 
-@dataclass
-class Order:
-    order_id: int
-    client_id: int
-    date: str
-    description: str
-    status: OrderStatus
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    phone: Mapped[str] = mapped_column(String(20))
+    password_hash: Mapped[str] = mapped_column(String)
+    role: Mapped[str] = mapped_column(String)
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    client_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    service_id: Mapped[int] = mapped_column(ForeignKey("services.id"))
+    status: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+class Booking(Base):
+    __tablename__ = "bookings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
+    employee_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String)
 
 
+class Payment(Base):
+    __tablename__ = "payments"
 
+    id: Mapped[int] = mapped_column(primary_key=True)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id"))
+    amount: Mapped[float] = mapped_column(Float)
+    paid_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    method: Mapped[str] = mapped_column(String)
 
+Base.metadata.create_all(engine)
