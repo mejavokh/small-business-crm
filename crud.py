@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from models import User, Order, Service, Booking
+from models import User, Order, Service, Booking, Payment
+
 
 def create_user(session: Session, name: str, phone: str, password_hash: str, role: str) -> User:
     user = User(
@@ -73,3 +74,21 @@ def get_booking_with_details(session: Session) -> list[tuple[Booking, Order, Ser
     result = session.execute(stmt)
     return [(order, user, service) for order, user, service in result]
 
+def process_payment(session: Session, booking_id: int, amount: float, method: str) -> bool:
+    try:
+        booking = session.execute(
+            select(Booking).where(Booking.id == booking_id)
+        ).scalar_one_or_none()
+
+        if booking is None:
+            return False
+
+        payment = Payment(booking_id=booking_id, amount=amount, method=method)
+        session.add(payment)
+        booking.status = "completed"
+
+        session.commit()
+        return True
+    except Exception:
+        session.rollback()
+        return False
