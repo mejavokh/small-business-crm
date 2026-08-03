@@ -3,7 +3,6 @@ from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Float, Integer, DateTime, ForeignKey, func
 
-from database import Session
 
 class Service(Base):
     __tablename__ = "services"
@@ -73,4 +72,3 @@ class Payment(Base):
                 f"amount={self.amount!r}, paid_at={self.paid_at!r},"
                 f"method={self.method})")
 
-Base.metadata.create_all(engine)
