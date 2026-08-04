@@ -12,6 +12,7 @@ def create_user(session: Session, name: str, phone: str, password_hash: str, rol
     )
     session.add(user)
     session.commit()
+    session.refresh(user)
 
     return user
 
@@ -34,13 +35,14 @@ def update_user(session: Session, user_id: int,
     user = session.execute(stmt).scalar_one_or_none()
 
     if user:
-        if name is not None:
+        if name is not None and name !="":
             user.name = name
-        if phone is not None:
+        if phone is not None and phone !="":
             user.phone = phone
-        if role is not None:
+        if role is not None and role !="":
             user.role =role
         session.commit()
+        session.refresh(user)
         return True
 
     return False
