@@ -1,4 +1,4 @@
-from database import Base, engine
+from database import Base
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Float, Integer, DateTime, ForeignKey, func

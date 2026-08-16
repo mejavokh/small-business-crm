@@ -5,7 +5,7 @@ from datetime import datetime
 class UserCreate(BaseModel):
     name: str
     phone: str
-    password_hash: str
+    password: str
     role: str
 
 class UserUpdate(BaseModel):
@@ -101,3 +101,6 @@ class PaymentResponse(BaseModel):
     method: str
 
     model_config = ConfigDict(from_attributes=True)
+
+class RefreshToken(BaseModel):
+    refresh_token: str

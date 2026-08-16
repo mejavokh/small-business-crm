@@ -2,7 +2,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from main import status
 from models import User, Order, Service, Booking, Payment
 
 # --------- crud for user ---------
@@ -326,3 +325,7 @@ def delete_payment(session: Session, payment_id: int) -> bool:
 
     return False
 
+# ---------- filters ----------
+def get_user_by_phone(session: Session, phone: str) -> User | None:
+    stmt = select(User).where(User.phone == phone)
+    return session.execute(stmt).scalar_one_or_none()

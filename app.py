@@ -1,12 +1,27 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from typing import List
-
-from sqlalchemy.ext.horizontal_shard import set_shard_id
-from sqlalchemy.orm import sessionmaker
+from jose import jwt, JWTError
 
 from database import Session
-from crud import *
-from schemas import *
+from crud import (
+    create_user, get_user_by_id, get_all_users, update_user, delete_user, get_user_by_phone,
+    create_service, get_service_by_id, get_all_services, update_service, delete_service,
+    create_order, get_order_by_id, get_all_orders, update_order, delete_order,
+    create_booking, get_booking_by_id, get_all_bookings, update_booking, delete_booking,
+    create_payment, get_payment_by_id, get_all_payments, update_payment, delete_payment,
+)
+from schemas import (
+    UserCreate, UserUpdate, UserResponse,
+    ServiceCreate, ServiceUpdate, ServiceResponse,
+    OrderCreate, OrderUpdate, OrderResponse,
+    BookingCreate, BookingUpdate, BookingResponse,
+    PaymentCreate, PaymentUpdate, PaymentResponse,
+    RefreshToken
+)
+from auth import (hash_password, verify_password, create_access_token, get_current_user, require_role,
+                  create_refresh_token, SECRET_KEY, ALGORITHM)
+from models import User
 
 app = FastAPI()
 
@@ -25,9 +40,16 @@ def get_clients():
 @app.post("/clients", response_model=UserResponse)
 def create_client(user_data: UserCreate):
     session = Session()
+
+    existing_user = get_user_by_phone(session, user_data.phone)
+    if existing_user is not None:
+        session.close()
+        raise HTTPException(status_code=400, detail="Phone number already registered")
+
+    hashed_password = hash_password(user_data.password)
     new_user = create_user(session,
                            name=user_data.name, phone=user_data.phone,
-                           password_hash=user_data.password_hash, role=user_data.role)
+                           password_hash=hashed_password, role=user_data.role)
     session.close()
     return new_user
 
@@ -58,7 +80,7 @@ def update_user_by_id(client_id: int, user_data: UserUpdate):
     return user
 
 @app.delete("/clients/{client_id}", status_code=204)
-def delete_client(client_id: int):
+def delete_client(client_id: int, current_user: User = Depends(require_role("admin"))):
     session = Session()
     result = delete_user(session, client_id)
 
@@ -357,3 +379,49 @@ def delete_payment_endpoint(payment_id: int):
         raise HTTPException(status_code=404, detail="Payment not found")
 
     session.close()
+
+@app.post("/login")
+def login(login_data: OAuth2PasswordRequestForm = Depends()):
+    session = Session()
+    user = get_user_by_phone(session, login_data.username)
+    session.close()
+
+    if user is None or not verify_password(login_data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Incorrect phone or password")
+
+    access_token = create_access_token(data={"sub": str(user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
+
+@app.post("/refresh")
+def refresh_access_token(refresh_data: RefreshToken):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Invalid refresh token",
+    )
+
+    try:
+        payload = jwt.decode(refresh_data.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        if payload.get("type") != "refresh":
+            raise credentials_exception
+
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    new_access_token = create_access_token(data={"sub": user_id})
+
+    return {
+        "access_token": new_access_token,
+        "token_type": "bearer"
+    }
+
+
