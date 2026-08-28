@@ -1,0 +1,22 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Статистика CRM</h1>
+<ul>
+    <li>Клиентов: {{ total_clients }}</li>
+    <li>Сотрудников: {{ total_employees }}</li>
+    <li>Услуг: {{ total_services }}</li>
+    <li>Заявок: {{ total_orders }}</li>
+    <li>Записей: {{ total_bookings }}</li>
+    <li>Общая выручка: {{ total_revenue }}</li>
+</ul>
+
+<ol>
+    {% for user in users %}
+    <li>
+        {{user}}
+    </li>
+    {% endfor %}
+</ol>
+
+{% endblock %}
