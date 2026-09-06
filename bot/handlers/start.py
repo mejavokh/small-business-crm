@@ -1,9 +1,11 @@
 import aiohttp
 import logging
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiohttp import ClientConnectorError, ClientResponseError
+
+from bot.keyboards.client import services_keyboard
 
 router = Router()
 URL = "http://127.0.0.1:8000"
@@ -24,8 +26,10 @@ async def command_service(message: Message):
                             f"список услуг: {services}")
 
         if services:
-            for service in services:
-                await message.answer(f"{service['name']} -> {service['price']}")
+            await message.answer(
+                "Выберите услугу",
+                reply_markup=services_keyboard(services)
+            )
         else:
             await message.answer("Сервисы пока недоступны")
     except ClientConnectorError:
@@ -35,4 +39,13 @@ async def command_service(message: Message):
         logger.error(f"Сервер вернул ошибку: {e.status}")
         await message.answer("Произошла ошибка на сервере")
 
+
+@router.callback_query(F.data.startswith("service_"))
+async def select_service(callback: CallbackQuery):
+    service_id = int(callback.data.replace("service_", ""))
+    logger.info(f"Пользователь выбрал услугу с id = {service_id}")
+
+    await callback.answer()
+
+    await callback.message.answer(f"Вы выбрали услугу с id {service_id}")
 
